@@ -15,6 +15,13 @@
         //Config
         var config = {
             startCam: true,
+            pictureQuality: 1.0,
+            enableSnapshot: false,
+            snapshotFlashScreen: false,
+            snapshotButton: '',
+            snapshotSound: '',
+            snapShotFormat: 'jpeg',            
+            snapshotOnComplete: '',
             recordingTime: 0,
             recordAudioAndVideo: false, //If true, both recording is done by video
             enableVideoStream: false,
@@ -24,8 +31,8 @@
             audioTriggerButtons: '',           
             onVideoComplete: 'null',
             videoTriggerButtons: '',
-            encode: '',
-            encodeCounter: 0
+            videoFrameRate: 500/60,
+            encode: ''          
         };       
         
         if (settings) {
@@ -33,9 +40,13 @@
         }
         
         var video               = ($('video').length > 0) ? $("video") : $('<video>').attr({id: 'video'}).appendTo("body");
-        video.autoplay          = true; //Make sure we are not frozen
+        video.autoplay          = true; //Make sure we are not frozen     
         
         config.recordingTime    = config.recordingTime * 1000;
+        
+        var snd                 = '';
+        var audioExtensions     = ['ogg', 'mp3', 'wav', 'mp4', 'wma'];
+        var audioFileExtension  = (config.snapshotSound !== '') ? config.snapshotSound.split('.').pop() : '';        
         
         var canvas              = ($('canvas').length > 0) ? $("canvas") : $('<canvas>').attr({id: 'canvas'}).appendTo("body");
         var ctx                 = canvas[0].getContext('2d');
@@ -53,9 +64,39 @@
         var frames              = [];
         
         $('canvas').attr({width: video.width(), height: video.height()});        
-             
-        /* Define buttons for audio record */
-                        
+        
+        if (config.recordAudioAndVideo === true) {
+            config.enableAudioStream = true;
+            config.enableVideoStream = true;
+        }
+        
+        
+        /* Define buttons for audio, record and snapshot */
+
+            if (config.enableSnapshot) {
+                
+                $(config.snapshotButton).click(function(){
+
+                    $(config.snapshotButton).hide();
+                    $(config.audioTriggerButtons[0]).hide();
+                    $(config.audioTriggerButtons[1]).hide();
+                    $(config.videoTriggerButtons[0]).hide();
+                    $(config.videoTriggerButtons[1]).hide();                    
+
+                    takeSnapshot();
+                    
+                    $(config.snapshotButton).show();
+                    if (config.recordAudioAndVideo) {
+                        $(config.videoTriggerButtons[0]).hide();                        
+                    } else {
+                        $(config.audioTriggerButtons[0]).show(); 
+                                                 
+                    }
+                     $(config.videoTriggerButtons[0]).show();
+                   
+                });                
+            }        
+        
             if (config.enableAudioStream) {
                 if ($.isArray(config.audioTriggerButtons) === true) {
                     
@@ -113,29 +154,55 @@
                     //When user clicks on video record
                     $(config.videoTriggerButtons[0]).click(function(){
                         
+                        $(config.snapshotButton).hide();
+                        $('video').hide();
+                        $('window').focusout();
+                        
                         //If recordingTime is set up
                         if (config.recordingTime > 0) {
                             
                             //start recording
-                            if ((config.recordAudioAndVideo === true) && (config.enableAudioStream === true)) {
+                            if (config.recordAudioAndVideo === true) {
                                 startRecordingAudio();
                             }
+                            
                             startRecordingVideo();
                             
                             $(config.videoTriggerButtons[0]).hide();
                             
                             //Define a timer to end record(s)
-                            var recordTimer = setInterval( function(){
+                            var recordTimer = setTimeout( function(){
                                 
-                                if ((config.recordAudioAndVideo === true) && (config.enableAudioStream === true)) {
-                                    stopRecordingAudio();
+                                if ((config.recordAudioAndVideo === true)) {
+                                    
+                                    //Asynchronous REAL TIME
+                                    $.when(
+                                        
+                                        stopRecordingAudio(),
+                                
+                                        //Show record button again and snapshot
+                                        $(config.videoTriggerButtons[0]).show(),
+                                        $(config.snapshotButton).show(),                                        
+                                       
+                                        clearTimeout(recordTimer)
+                                        
+                                    ).then(function() {
+                                        
+                                        stopRecordingVideo();
+                                       
+                                        config.encode.call(this);
+                                    });
+                                    
+                                } else {
+                                    
+                                    stopRecordingVideo();
+
+                                    clearInterval(recordTimer);
+
+                                    //Show record button again and snapshot
+                                    $(config.videoTriggerButtons[0]).show();
+                                    $(config.snapshotButton).show();                                    
                                 }
-                                stopRecordingVideo();
-                                
-                                clearInterval(recordTimer);
-                                
-                                //Show record button again
-                                $(config.videoTriggerButtons[0]).show();
                                 
                             }, config.recordingTime);
                         
@@ -295,19 +362,70 @@
         window.Recorder = Recorder;
 
         /* 
+         * TAKE SNAPSHOT 
+         * 
+         */ 
+            function takeSnapshot() 
+            {
+                $('canvas').attr({width: video.width(), height: video.height()});
+                canvas.width = video.width();
+                canvas.height = video.height();                 
+                ctx.drawImage(video[0], 0, 0, video.width(), video.height());                        
+                
+                var result = canvas[0].toDataURL('image/'+config.snapShotFormat, config.pictureQuality);
+
+                //Callback function with parameters
+                if ($.isFunction(config.snapshotOnComplete)) {
+                    config.snapshotOnComplete.call(this, result);
+                }
+
+                //Flashscreen
+                if (config.snapshotFlashScreen !== false) {
+                    $('body').fadeTo(config.snapshotFlashScreen.fadeIn, config.snapshotFlashScreen.fadeInSpeed).fadeTo(config.snapshotFlashScreen.fadeOut, config.snapshotFlashScreen.fadeOutSpeed);                    
+                }
+ 
+                //Play sound!
+                if (window.HTMLAudioElement) {
+                    snd = new Audio('');
+
+                    if ($.inArray(audioFileExtension, audioExtensions) !== -1) {
+                        if (snd.canPlayType('audio/' + audioFileExtension + '')) {
+                            snd = new Audio(config.snapshotSound);
+
+                            snd.play();
+                            console.log(snd);
+
+                            if (config.stop === true) {
+                                console.log(snd.stop());
+                            }
+
+                        } else {
+                           alert('Error! Unable to play ' + config.snapshotSound + '. Please check extension.'); 
+                        }
+
+                    } else {
+                        console.log('Your file format is not recognized as audio file!');
+                    }
+
+                } else {
+                    console.log('HTML5 Audio is not supported by your browser!');
+                }                
+            }
+
+        /* 
          * RECORD AUDIO STREAM 
          * 
          */ 
             function startRecordingAudio() 
             {
-              recorder && recorder.record();
-              console.log('Recording audio...');
+                recorder && recorder.record();        
+                console.log('Recording audio...');
             }
 
             function stopRecordingAudio() 
-            {
+            {    
                 recorder && recorder.stop();
-
+                
                 // create WAV download link using audio data blob
                 createDownloadLink();
 
@@ -319,21 +437,7 @@
             {
                 recorder && recorder.exportWAV(function(blob) {
                     
-                    var url = URL.createObjectURL(blob);
-                    var li = document.createElement('li');
-                    var au = document.createElement('audio');
-                    var hf = document.createElement('a');
-
-                    au.controls = true;
-                    au.src = url;
-                    hf.href = url;
-                    hf.download = new Date().toISOString() + '.wav';
-                    hf.innerHTML = hf.download;
-                    li.appendChild(au);
-                    li.appendChild(hf);
-                    //recordingslist.appendChild(li);
-                    
-                    upload(blob, config.onAudioComplete);
+                    upload(blob, config.onAudioComplete);                   
                 });
             }
 
@@ -341,14 +445,7 @@
             {
                 //Do callback action on video Complete
                 if ($.isFunction(onComplete)) {
-                    onComplete.call(this, blobOrFile, config.readyToEncode);
-                    
-                    if ($.isFunction(config.encode)) {
-                        if (config.encodeCounter === 0) {
-                            config.encode.call(this);
-                        }
-                        config.encodeCounter++;
-                    } 
+                    onComplete.call(this, blobOrFile, config.readyToEncode); 
                 }               
             }            
         
@@ -356,8 +453,7 @@
         * RECORD VIDEO STREAM 
         */
             function startRecordingVideo() 
-            {
-
+            {              
                 frames      = []; // clear existing frames;
                 startTime   = Date.now();
                 console.log('Recording video...');
@@ -368,12 +464,7 @@
                     
                     $('canvas').attr({width: video.width(), height: video.height()});
                     
-                    var myImage     = new Image();
-                    myImage.width   = video.width();
-                    myImage.height  = video.height();
-                    
                     ctx.drawImage(video[0], 0, 0, video.width(), video.height());
-                    //myImage.src = $('video').attr('src');
                     
                     var url = canvas[0].toDataURL('image/webp', 1); // image/jpeg is way faster :(
 
@@ -392,12 +483,10 @@
                             ((endTime - startTime) / 1000) + 's video');
                 
                 // 2nd param: framerate for the video file.
-                var webmBlob = Whammy.fromImageArray(frames, 500 / 60);
+                var encoder = new Whammy.Video(15); 
+                var webmBlob = Whammy.fromImageArray(frames, config.videoFrameRate);
 
-                upload(webmBlob, config.onVideoComplete);
-                
-                console.log('Stop recording video!');
-                
+                upload(webmBlob, config.onVideoComplete);                
             };    
         
         return this;       

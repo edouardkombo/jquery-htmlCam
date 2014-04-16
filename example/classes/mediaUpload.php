@@ -3,31 +3,37 @@ ini_set('memory_limit','1200M');
 ini_set('post_max_size','120M');
 ini_set('upload_max_filesize','120M');
 
-if (isset($_POST['ffmpegPath'])) {
+if (isset($_POST['encoderEnvPath'])) {
     
     /*
      * HERE, we encode .wav and .webm in one file
      */
-    $ffmpegPath = (string) filter_input(INPUT_POST, 'ffmpegPath');
-    $audio      = (string) filter_input(INPUT_POST, 'audioFilePath');
-    $video      = (string) filter_input(INPUT_POST, 'videoFilePath');
-    $output     = (string) filter_input(INPUT_POST, 'outputPath');
-    $sleep      = (string) filter_input(INPUT_POST, 'sleep');    
-    $delete     = (boolean) filter_input(INPUT_POST, 'deleteOld');
+    $encoderEnvPath = (string) filter_input(INPUT_POST, 'encoderEnvPath');
+    $audio          = (string) filter_input(INPUT_POST, 'audioFilePath');
+    $video          = (string) filter_input(INPUT_POST, 'videoFilePath');
+    $output         = (string) filter_input(INPUT_POST, 'outputPath');
+    $sleep          = (string) filter_input(INPUT_POST, 'sleep');    
+    
+    $i = 0;
+    $startTime = 0;
+    $endTime = 0;
+    
+    do {
+        if (file_exists($audio) && file_exists($video)) {
+            echo 'Start media encoding...'."\n";    
+            $startTime = time();
 
-    sleep($sleep);
-    
-    exec("ffmpeg -i $video -i $audio -map 0:0 -map 1:0 $output");
-    
-    if ($delete) {
-        sleep($sleep);
-        if (file_exists($audio)) {
-            unlink($audio);
+            exec("$encoderEnvPath -i $video -i $audio -map 0:0 -map 1:0 $output");
+
+            $endTime = time();
+            $i = 1;
         }
-        if (file_exists($video)) {
-            unlink($video);
-        }               
-    }
+            
+    }while($i <= 0);
+    
+    $duration = $endTime - $startTime;
+    echo "Encoding time = $duration seconds"."\n";
+    echo 'ok';
 
 } else {
 
@@ -40,7 +46,15 @@ if (isset($_POST['ffmpegPath'])) {
     $absolutePath   = $mediaPath . $filename . $format;
 
     $media          = file_get_contents('php://input');
-
+    
+    //If image is sent
+    if (substr($media, 0, 10) === 'data:image') {
+        $format         = str_replace('.', '', $format);
+        $media          = base64_decode(str_replace('data:image/'.$format.';base64,','', $media));
+    }
+    
     //Create file and return status
-    echo (file_put_contents($absolutePath, $media)) ? true : false ;    
+    echo (file_put_contents($absolutePath, $media)) ? "$format ok!" : "$format error!" ;    
+
+    usleep(1700);    
 }
