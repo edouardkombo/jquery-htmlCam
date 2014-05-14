@@ -1,0 +1,44 @@
+{
+  "name": "jQuery-htmlCam",
+  "version": "0.0.1",
+  "homepage": "https://github.com/kcassam/jQuery-htmlCam",
+  "authors": [
+    "Edouard Kombo <edouard.kombo@gmail.com>"
+  ],
+  "description": "jQuery-htmlCam is a powerfull plugin that helps you activate your webcam, take picture, record audio and video from livestream, separately or simultaneously, and encode both records in one media file.",
+  "main": "src/jQuery-htmlCam.min.js",
+  "keywords": [
+    "jQuery-htmlCam",
+    "record",
+    "audio",
+    "html5",
+    "record",
+    "video",
+    "record",
+    "audio",
+    "and",
+    "video",
+    "html5",
+    "take",
+    "snapshot",
+    "from",
+    "webcam",
+    "record",
+    "frim",
+    "livestream",
+    "edouaf"
+  ],
+  "dependencies": {
+    "jquery": ">=2.0.0",
+    "Recorderjs": "*",
+    "whammy": "*"
+  },
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ]
+}

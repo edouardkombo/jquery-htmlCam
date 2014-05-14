@@ -1,0 +1,62 @@
+<html>
+<head>
+  <style>
+    body {
+      margin: 20px 100px;
+    }
+
+    .editor {
+      width: 400px;
+      min-height: 300px;
+      font-size: 15px;
+      text-align: left;
+      border: 1px solid black;
+
+    }
+
+    .player {
+      width: 400px;
+      min-height: 300px;
+      font-size: 15px;
+      text-align: left;
+      border: 1px solid black;
+    }
+  </style>
+  <link href='components/amasad-codemirror/codemirror.css' rel='stylesheet' type='text/css'>
+
+</head>
+<body>
+  <div class="demo-page">
+    <div class="header">
+      <h1>Tracking codes like a boss</h1>
+    </div>
+    <div class="body">
+      <!-- <div class="editor"> -->
+      <div>
+        <textarea class="editor" autofocus rows="5"></textarea>
+      </div>
+      <br />
+      <!-- <div class="player"> -->
+      <!-- <div> -->
+        <textarea class="player" disabled="disabled" rows="5"></textarea>
+      </div>
+      <br />
+
+      <div>
+        <div>
+          <button class="replay" type="submit">Play Recording</button>
+          <button class="clear" type="submit">Clear Recording</button>
+        </div>
+        <br />
+      </div>
+      <div>
+        <button class="print" type="submit">Print Recording Deltas to Console</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="components/ace/ace.js"></script>
+  <script src="../dist/recorder.js"></script>
+  <script src="js/demo.bundle.js"></script>
+</body>
+</html>

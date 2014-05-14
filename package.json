@@ -1,0 +1,9 @@
+{
+  "name": "jQuery-htmlCam",
+  "version": "0.0.1",
+  "author": "Edouard kombo <edouard.kombo@gmail.com>",
+  "devDependencies": {
+    "grunt": "~0.4.1",
+    "grunt-contrib-jshint": "~0.6.3"
+  }
+}
